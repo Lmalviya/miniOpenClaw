@@ -1,3 +1,4 @@
+from enum import StrEnum
 from datetime import datetime, timezone
 from pydantic import BaseModel, Field
 
@@ -46,10 +47,53 @@ class PlanStep(PlanStepCreate):
     last_error: str | None = None
     updated_at: datetime
 
-
 class EventLog(BaseModel):
     id: int
     project_id: str
     event_type: str
     details: dict = Field(default_factory=dict)
     created_at: datetime
+
+# ==================================== Inbound and OutBound =============================
+
+class OutboxStatus(StrEnum):
+    PENDING = "PENDING"
+    SENT = "SENT"
+    FAILED = "FAILED"
+
+class TimerStatus(StrEnum):
+    PENDING = "PENDING"
+    FIRED = "FIRED"
+    CANCELLED = "CANCELLED"
+
+class InboxMessage(BaseModel):
+    id: int
+    project_id:str|None = None
+    channel: str 
+    external_user_id: str
+    idempotency_key: str
+    body: str
+    processed: bool = False
+    created_at: datetime
+
+class OutboxMessage(BaseModel):
+    id: int
+    project_id:str
+    channel: str
+    recipient_id: str
+    idempotency_key: str
+    body: str
+    status: OutboxStatus = OutboxStatus.PENDING
+    retry_count: int = 0
+    created_at: datetime 
+    sent_at: datetime|None = None
+
+class Timer(BaseModel):
+    id: int
+    project_id: str
+    timer_type: str
+    fire_at: datetime
+    status: TimerStatus = TimerStatus.PENDING
+    payload: dict = Field(default_factory=dict)
+    created_at: datetime
+    fired_at: datetime|None=None
