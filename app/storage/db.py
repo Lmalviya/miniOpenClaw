@@ -127,7 +127,7 @@ class Database:
         self.db_path = Path(db_path)
 
     async def init(self) -> None:
-        self.db_path.parent.mkdir(Parents=True, exist_ok=True)
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
         async with self.connect() as conn:
             await conn.executescript(SCHEMA_SQL)
             await conn.commit()
@@ -135,7 +135,7 @@ class Database:
     @asynccontextmanager
     async def connect(self):
         conn = await aiosqlite.connect(self.db_path)
-        conn.row_factory - aiosqlite.Row 
+        conn.row_factory = aiosqlite.Row
         try:
             await conn.execute("PRAGMA journal_mode = WAL;")
             await conn.execute("PRAGMA busy_timeout = 5000;")

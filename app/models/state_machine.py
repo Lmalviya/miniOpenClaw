@@ -18,9 +18,10 @@ class StepStatus(StrEnum):
     FAILED = "FAILED"
     SKIPPED = "SKIPPED"
 
+# Finite State Machine Guardrail
 ALLOWED_TRANSITIONS: dict[ProjectStatus, set[ProjectStatus]] = {
     ProjectStatus.INTAKE: {ProjectStatus.PLANNING, ProjectStatus.PARKED, ProjectStatus.FAILED},
-    ProjectStatus.PLANNING = {ProjectStatus.AWAITING_PLAN_APPROVAL, ProjectStatus.FAILED},
+    ProjectStatus.PLANNING: {ProjectStatus.AWAITING_PLAN_APPROVAL, ProjectStatus.FAILED},
     ProjectStatus.AWAITING_PLAN_APPROVAL: {
         ProjectStatus.PLANNING,
         ProjectStatus.BUILDING,
@@ -36,11 +37,10 @@ ALLOWED_TRANSITIONS: dict[ProjectStatus, set[ProjectStatus]] = {
 }
 
 
-class InvalidTransitionError(valueError):
+class InvalidTransitionError(ValueError):
     pass 
 
 def validate_transition(current: ProjectStatus, target: ProjectStatus) -> None:
     if target not in ALLOWED_TRANSITIONS.get(current, set()):
         raise InvalidTransitionError(f"Cannot transition from {current} to {target}")
 
-        
