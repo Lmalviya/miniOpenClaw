@@ -30,6 +30,8 @@ class TimerWorker:
             # Guard: only process plan timers if project is still waiting for plan approval
             if timer.timer_type.startswith("PLAN_") and project.status != ProjectStatus.AWAITING_PLAN_APPROVAL:
                 continue
+            if timer.timer_type.startswith("REVIEW_") and project.status != ProjectStatus.AWAITING_REVIEW:
+                continue
 
             recipient = await self.message_repo.get_recipient_for_channel(
                 project.id, project.last_active_channel
@@ -68,6 +70,40 @@ class TimerWorker:
                     recipient_id=recipient,
                     idempotency_key=f"timer-outbox:{timer.id}",
                     body="No reply after 7 days, so I've parked this project. Reply anytime to resume!",
+                    now=current,
+                )
+                handled += 1
+
+            elif timer.timer_type.startswith("REVIEW_REMINDER_"):
+                day = timer.payload.get("day", "?")
+                await self.message_repo.enqueue_outbox(
+                    project_id=project.id,
+                    channel=project.last_active_channel,
+                    recipient_id=recipient,
+                    idempotency_key=f"timer-outbox:{timer.id}",
+                    body=f"Review reminder (Day {day}): Reply APPROVE to go live, or tell me what to change.",
+                    now=current,
+                )
+                handled += 1
+
+            elif timer.timer_type == "REVIEW_EXPIRE_DAY_7":
+                try:
+                    await self.project_repo.transition_status(
+                        project.id,
+                        ProjectStatus.AWAITING_REVIEW,
+                        ProjectStatus.PARKED,
+                        reason="No review reply after 7 days",
+                        now=current,
+                    )
+                except StateConflictError:
+                    continue
+
+                await self.message_repo.enqueue_outbox(
+                    project_id=project.id,
+                    channel=project.last_active_channel,
+                    recipient_id=recipient,
+                    idempotency_key=f"timer-outbox:{timer.id}",
+                    body="No review reply after 7 days, so I've parked this project. Reply anytime to resume!",
                     now=current,
                 )
                 handled += 1

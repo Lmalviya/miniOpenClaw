@@ -371,6 +371,25 @@ class ProjectRepository:
             await conn.commit()
         return await self.save_plan_steps(project_id, steps, build_round=build_round, now=now)
 
+    async def increment_build_round(
+        self, project_id: str, now: datetime | None = None
+    ) -> Project:
+        ts = to_iso(now or utc_now())
+        async with self.db.connect() as conn:
+            await conn.execute(
+                """
+                UPDATE projects
+                SET build_round = build_round + 1, updated_at = ?
+                WHERE id = ?
+                """,
+                (ts, project_id),
+            )
+            await self._insert_event(conn, project_id, "BUILD_ROUND_INCREMENTED", {}, ts)
+            await conn.commit()
+        project = await self.get_project(project_id)
+        assert project is not None
+        return project
+    
     async def _insert_event(
         self, conn, project_id: str, event_type: str, details: dict, ts: str
     ) -> None:
@@ -381,3 +400,5 @@ class ProjectRepository:
             """,
             (project_id, event_type, json.dumps(details), ts),
         )
+
+    

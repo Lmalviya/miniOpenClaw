@@ -15,6 +15,11 @@ class PlannerLLM(ABC):
     async def plan(self, conversation: list[dict[str, str]]) -> PlannerDecision:
         """Decide whether to ask clarifying questions or generate spec + plan"""
 
+    @abstractmethod
+    async def plan_changes(self, spec_markdown: str, change_request:str, build_round: int)-> list[PlanStepCreate]:
+        """Generate targeted steps for a post-review change round"""
+
+
 
 class RuleBasedMockPlannerLLM(PlannerLLM):
     """Deterministic planner for learning and testing without an llm api key."""
@@ -85,3 +90,13 @@ class RuleBasedMockPlannerLLM(PlannerLLM):
                 "Reply APPROVE to start building, or send changes."
             ),
         )
+
+    async def plan_changes(self, spec_markdown: str, change_request: str, build_round: int) -> list[PlanStepCreate]:
+        return [
+            PlanStepCreate(
+                step_order=1,
+                title=f"Round {build_round} change: {change_request[:35]}",
+                description=f"Apply review feedback: {change_request}",
+                acceptance_criteria="All existing and new change tests pass.",
+            )
+        ]

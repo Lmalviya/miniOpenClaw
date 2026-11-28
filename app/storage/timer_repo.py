@@ -115,3 +115,25 @@ class TimerRepository:
             )
             await conn.commit()
             return cursor.rowcount
+
+    async def schedule_review_timers(
+        self,
+        project_id: str,
+        day_seconds: float = 86400.0,
+        now: datetime | None = None,
+    ) -> list[int]:
+        """Schedule Day 2, 5 review reminders + Day 7 review expiration."""
+        base = now or utc_now()
+        schedule = [
+            ("REVIEW_REMINDER_DAY_2", 2),
+            ("REVIEW_REMINDER_DAY_5", 5),
+            ("REVIEW_EXPIRE_DAY_7", 7),
+        ]
+        ids: list[int] = []
+        for timer_type, days in schedule:
+            fire_at = base + timedelta(seconds=days * day_seconds)
+            timer_id = await self.schedule_timer(
+                project_id, timer_type, fire_at, payload={"day": days}, now=base
+            )
+            ids.append(timer_id)
+        return ids

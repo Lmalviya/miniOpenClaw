@@ -127,4 +127,10 @@ class GitWorkspace:
         )
         return output or None
 
+    async def create_tag(self, tag_name: str) -> None:
+        if await self.has_commits():
+            await self._run_git("tag", "-f", tag_name)
+
+            
+
     
