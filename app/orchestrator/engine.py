@@ -46,7 +46,11 @@ class AgentOrchestrator:
             steps = await self.project_repo.get_plan_steps(project_id, project.build_round)
             if steps and all(s.status == StepStatus.DONE for s in steps):
                 target = ProjectStatus.AWAITING_REVIEW
+            elif steps and any(s.status != StepStatus.PENDING for s in steps):
+                # Build had already started (e.g., paused mid-build then parked)
+                target = ProjectStatus.BUILDING
             elif steps:
+                # Plan exists, but build never started yet
                 target = ProjectStatus.AWAITING_PLAN_APPROVAL
             else:
                 target = ProjectStatus.INTAKE

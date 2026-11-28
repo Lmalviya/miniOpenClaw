@@ -44,6 +44,12 @@ class Phase3Reviewer:
                 reason=f"Preview healthcheck failed: {result.error}",
                 now=current,
             )
+            await self._send_to_active_channel(
+                project.id,
+                idempotency_key=f"preview-failed:{project.id}:r{project.build_round}",
+                body=f"Build finished, but the preview healthcheck failed for round {project.build_round}.",
+                now=current,
+            )
             return
 
         await self.timer_repo.schedule_review_timers(
@@ -80,6 +86,18 @@ class Phase3Reviewer:
         text = latest.body.strip()
         for msg in pending:
             await self.message_repo.mark_inbox_processed(msg.id)
+
+        if any(k in text.lower() for k in ("status", "progress")):
+            await self._send_to_active_channel(
+                project.id,
+                idempotency_key=f"review-status:{latest.id}",
+                body=(
+                    f"Status: AWAITING_REVIEW (round {project.build_round}). "
+                    "Reply APPROVE to go live, or tell me what to change."
+                ),
+                now=current,
+            )
+            return ProjectStatus.AWAITING_REVIEW
 
         await self.timer_repo.cancel_pending_timers(project_id)
 
