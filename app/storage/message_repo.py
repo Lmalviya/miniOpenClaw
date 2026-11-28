@@ -201,3 +201,17 @@ class MessageRepository:
             )
             row = await cursor.fetchone()
             return row["project_id"] if row else None
+
+    async def get_recipient_for_channel(self, project_id: str, channel: str) -> str | None:
+        async with self.db.connect() as conn:
+            cursor = await conn.execute(
+                """
+                SELECT external_user_id FROM project_members
+                WHERE project_id = ? AND channel = ?
+                ORDER BY CASE WHEN role = 'owner' THEN 0 ELSE 1 END, id ASC
+                LIMIT 1
+                """,
+                (project_id, channel),
+            )
+            row = await cursor.fetchone()
+            return row["external_user_id"] if row else None

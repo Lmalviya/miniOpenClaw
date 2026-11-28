@@ -338,6 +338,24 @@ class ProjectRepository:
             await self._insert_event(conn, project_id, event_type, details or {}, ts)
             await conn.commit()
 
+    async def update_last_active_channel(
+        self,
+        project_id: str,
+        channel: str,
+        now: datetime | None = None,
+    ) -> None:
+        ts = to_iso(now or utc_now())
+        async with self.db.connect() as conn:
+            await conn.execute(
+                """
+                UPDATE projects
+                SET last_active_channel = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (channel, ts, project_id),
+            )
+            await conn.commit()
+
     async def _insert_event(
         self, conn, project_id: str, event_type: str, details: dict, ts: str
     ) -> None:

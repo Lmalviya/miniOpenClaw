@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# SQLite databases & WAL files
+*.db
+*.db-wal
+*.db-shm
+*.sqlite*
+
+# Generated project workspaces
+workspaces/
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
