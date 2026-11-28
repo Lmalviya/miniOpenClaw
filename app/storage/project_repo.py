@@ -356,6 +356,21 @@ class ProjectRepository:
             )
             await conn.commit()
 
+    async def replace_plan_steps(
+        self, 
+        project_id:str,
+        steps: list[PlanStepCreate],
+        build_round:int = 1,
+        now: datetime|None=None
+    ) -> list[PlanStep]:
+        async with self.db.connect() as conn:
+            await conn.execute(
+                "DELETE FROM plan_steps WHERE project_id = ? AND build_round = ?",
+                (project_id, build_round)
+            )
+            await conn.commit()
+        return await self.save_plan_steps(project_id, steps, build_round=build_round, now=now)
+
     async def _insert_event(
         self, conn, project_id: str, event_type: str, details: dict, ts: str
     ) -> None:

@@ -215,3 +215,25 @@ class MessageRepository:
             )
             row = await cursor.fetchone()
             return row["external_user_id"] if row else None
+
+    async def get_conversation_history(self, project_id:str) -> list[dict[str, str]]:
+        """Reconstract durable chat history from inbox + outbox rows"""
+
+        async with self.db.connect() as conn:
+            cursor = await conn.execute(
+                """
+                SELECT 'user' AS role, body, created_at, id AS sort_id
+                FROM messages_inbox
+                WHERE project_id = ?
+                UNION ALL
+                SELECT 'assistant' AS role, body, created_at, id AS sort_id
+                FROM messages_outbox
+                WHERE project_id = ?
+                ORDER BY created_at ASC, sort_id ASC
+                """,
+                (project_id, project_id)
+            )
+            rows = await cursor.fetchall()
+            return [{"role": r["role"], "content": r["body"]} for r in rows]
+
+            
